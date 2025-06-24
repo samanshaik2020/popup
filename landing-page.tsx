@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Target, MousePointerClick, BarChart2, Twitter, Facebook, Linkedin, Github } from "lucide-react"
+import Link from "next/link"
 
 export default function LandingPage() {
   return (
@@ -15,7 +16,6 @@ export default function LandingPage() {
 
             <div className="flex items-center space-x-4">
               <Button variant="ghost">Pricing</Button>
-              <Button>Login</Button>
             </div>
           </div>
         </div>
@@ -29,8 +29,8 @@ export default function LandingPage() {
             Our tool shortens your links and overlays your custom ad, turning every shared link into a powerful
             marketing asset.
           </p>
-          <Button size="lg" className="text-lg px-8 py-6">
-            Get Started for Free
+          <Button size="lg" asChild className="text-lg px-8 py-6">
+            <Link href="/create">Create New Ad</Link>
           </Button>
         </div>
       </section>

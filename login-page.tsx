@@ -1,4 +1,7 @@
+'use client'
+
 import { Button } from "@/components/ui/button"
+import { supabase } from "@/lib/supabaseClient"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 // Google icon component
@@ -42,11 +45,18 @@ export default function LoginPage() {
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Welcome back</CardTitle>
-            <CardDescription>Log in to access your dashboard</CardDescription>
+            <CardDescription>Log in using your Google account</CardDescription>
           </CardHeader>
 
           <CardContent>
-            <Button className="w-full" size="lg">
+            <Button className="w-full" size="lg" onClick={async () => {
+                const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'google',
+                })
+                if (error) {
+                  console.error('Error signing in:', error)
+                }
+              }}>
               <GoogleIcon />
               Sign in with Google
             </Button>

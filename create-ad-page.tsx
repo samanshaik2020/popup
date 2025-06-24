@@ -11,10 +11,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { UploadCloud, X, User } from "lucide-react"
 
 interface CreateAdPageProps {
-  onClose: () => void
+  onClose?: () => void
 }
 
-export default function CreateAdPage({ onClose }: CreateAdPageProps) {
+export default function CreateAdPage({ onClose = () => {} }: CreateAdPageProps) {
   const [adSettings, setAdSettings] = useState({
     adName: "hello",
     adType: "text",
@@ -28,7 +28,16 @@ export default function CreateAdPage({ onClose }: CreateAdPageProps) {
     buttonLink: "https://example.com",
     logoLink: "https://example.com",
     logoText: "Brand Name",
+    destinationUrl: "https://example.com",
+    delay: "0",
+    bgColor: "#ffffff",
+    textColor: "#000000",
+    buttonColor: "#6366f1",
+    videoUrl: "",
+
   })
+
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null)
 
   const updateSetting = (key: string, value: string) => {
     setAdSettings((prev) => ({ ...prev, [key]: value }))
@@ -61,7 +70,7 @@ export default function CreateAdPage({ onClose }: CreateAdPageProps) {
           <TabsList>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="design">Design</TabsTrigger>
-            <TabsTrigger value="tracking">Tracking</TabsTrigger>
+            
           </TabsList>
         </Tabs>
       </div>
@@ -69,6 +78,29 @@ export default function CreateAdPage({ onClose }: CreateAdPageProps) {
       <div className="flex h-[calc(100vh-120px)]">
         {/* Left Column - Settings Form */}
         <div className="w-1/2 border-r overflow-y-auto p-6 space-y-8">
+          {/* Destination URL */}
+          <div className="space-y-2">
+            <Label htmlFor="dest">Destination URL</Label>
+            <Input
+              id="dest"
+              value={adSettings.destinationUrl}
+              onChange={(e) => updateSetting("destinationUrl", e.target.value)}
+              placeholder="https://targetsite.com"
+            />
+          </div>
+
+          {/* Delay */}
+          <div className="space-y-2">
+            <Label htmlFor="delay">Popup Delay (seconds, optional)</Label>
+            <Input
+              id="delay"
+              type="number"
+              min="0"
+              value={adSettings.delay}
+              onChange={(e) => updateSetting("delay", e.target.value)}
+            />
+          </div>
+
           {/* Ad Name Section */}
           <div className="space-y-2">
             <Label htmlFor="adName">Ad Name</Label>
@@ -285,10 +317,84 @@ export default function CreateAdPage({ onClose }: CreateAdPageProps) {
             </div>
           </div>
 
-          {/* Action Button */}
-          <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={onClose}>
-            Done
-          </Button>
+          {/* Design Customization */}
+          <div className="space-y-4">
+            <Label>Popup Background Color</Label>
+            <Input
+              type="color"
+              value={adSettings.bgColor}
+              onChange={(e) => updateSetting("bgColor", e.target.value)}
+              className="w-16 h-8 p-0 border-none bg-transparent"
+            />
+            <Label>Text Color</Label>
+            <Input
+              type="color"
+              value={adSettings.textColor}
+              onChange={(e) => updateSetting("textColor", e.target.value)}
+              className="w-16 h-8 p-0 border-none bg-transparent"
+            />
+            <Label>Button Color</Label>
+            <Input
+              type="color"
+              value={adSettings.buttonColor}
+              onChange={(e) => updateSetting("buttonColor", e.target.value)}
+              className="w-16 h-8 p-0 border-none bg-transparent"
+            />
+          </div>
+
+          {/* Uploads */}
+          <div className="space-y-4">
+            <Label htmlFor="profilePic">Profile Image</Label>
+            <Input
+              id="profilePic"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  const reader = new FileReader()
+                  reader.onload = () => {
+                    updateSetting("profilePicture", reader.result as string)
+                  }
+                  reader.readAsDataURL(file)
+                }
+              }}
+            />
+
+            <Label htmlFor="videoUpload">Promo Video (optional)</Label>
+            <Input
+              id="videoUpload"
+              type="file"
+              accept="video/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  const url = URL.createObjectURL(file)
+                  updateSetting("videoUrl", url)
+                }
+              }}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-2">
+            <Button
+              className="w-full bg-purple-600 hover:bg-purple-700"
+              onClick={() => {
+                // simple slug
+                const slug = Math.random().toString(36).substring(2, 8)
+                localStorage.setItem(`ad_${slug}`, JSON.stringify(adSettings))
+                setGeneratedLink(`${window.location.origin}/${slug}`)
+              }}
+            >
+              Generate Link
+            </Button>
+            {generatedLink && (
+              <div className="text-sm break-all text-center">
+                Your link: <a className="underline text-blue-600" href={generatedLink}>{generatedLink}</a>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Column - Live Preview */}
@@ -307,16 +413,20 @@ export default function CreateAdPage({ onClose }: CreateAdPageProps) {
               />
 
               {/* Ad Popup Overlay */}
-              <Card className={`absolute ${getPopupPosition()} w-80 shadow-lg z-10 border-2 bg-white`}>
+              <Card className={`absolute ${getPopupPosition()} w-80 shadow-lg z-10 border-2`} style={{ backgroundColor: adSettings.bgColor, color: adSettings.textColor }}>
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-muted-foreground" />
+                    <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center" style={{ backgroundColor: adSettings.bgColor }}>
+                      {adSettings.profilePicture ? (
+                        <img src={adSettings.profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-6 h-6 text-muted-foreground" />
+                      )}
                     </div>
                     <div className="flex-1 space-y-2">
                       <div className="font-semibold text-sm">{adSettings.profileName}</div>
                       <div className="text-sm text-muted-foreground">{adSettings.description}</div>
-                      <Button size="sm" className="w-full">
+                      <Button size="sm" className="w-full" style={{ backgroundColor: adSettings.buttonColor, color: '#ffffff' }}>
                         {adSettings.buttonText}
                       </Button>
                     </div>
@@ -329,6 +439,9 @@ export default function CreateAdPage({ onClose }: CreateAdPageProps) {
                       {adSettings.logoText}
                     </div>
                   )}
+                {adSettings.videoUrl && (
+                  <video src={adSettings.videoUrl} controls className="mt-2 w-full rounded" />
+                )}
                 </CardContent>
               </Card>
             </div>
