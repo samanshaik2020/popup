@@ -11,11 +11,13 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <h1 className="text-xl font-bold">Rite.ly</h1>
+              <h1 className="text-xl font-bold">popiup</h1>
             </div>
 
             <div className="flex items-center space-x-4">
-              <Button variant="ghost">Pricing</Button>
+              <Button variant="ghost" asChild>
+                <Link href="/login">Login</Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -30,7 +32,7 @@ export default function LandingPage() {
             marketing asset.
           </p>
           <Button size="lg" asChild className="text-lg px-8 py-6">
-            <Link href="/create">Create New Ad</Link>
+            <Link href="/login?redirect=/dashboard">Get Started</Link>
           </Button>
         </div>
       </section>
@@ -39,7 +41,7 @@ export default function LandingPage() {
       <section className="py-20 px-6 bg-muted/50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Why Choose Rite.ly?</h2>
+            <h2 className="text-3xl font-bold mb-4">Why Choose popiup?</h2>
             <p className="text-muted-foreground text-lg">Transform your links into powerful marketing tools</p>
           </div>
 
@@ -132,10 +134,10 @@ export default function LandingPage() {
         <div className="container mx-auto text-center max-w-3xl">
           <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Links?</h2>
           <p className="text-xl mb-8 opacity-90">
-            Join thousands of marketers who are already using Rite.ly to boost their engagement.
+            Join thousands of marketers who are already using popiup to boost their engagement.
           </p>
-          <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
-            Start Your Free Trial
+          <Button size="lg" variant="secondary" className="text-lg px-8 py-6" asChild>
+            <Link href="/login?redirect=/dashboard">Start Your Free Trial</Link>
           </Button>
         </div>
       </section>
@@ -145,7 +147,7 @@ export default function LandingPage() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="font-bold text-lg mb-4">Rite.ly</h3>
+              <h3 className="font-bold text-lg mb-4">popiup</h3>
               <p className="text-muted-foreground text-sm">Transform every link into a marketing opportunity.</p>
             </div>
 
@@ -216,7 +218,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 Rite.ly. All rights reserved.</p>
+            <p>&copy; 2024 popiup. All rights reserved.</p>
           </div>
         </div>
       </footer>

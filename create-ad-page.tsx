@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,12 +10,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { UploadCloud, X, User } from "lucide-react"
+import { supabase } from "./lib/supabaseClient"
+import { useToast } from "@/components/ui/use-toast"
 
 interface CreateAdPageProps {
   onClose?: () => void
 }
 
 export default function CreateAdPage({ onClose = () => {} }: CreateAdPageProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check if user is authenticated
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        // Redirect to login if not authenticated
+        router.push('/login');
+      }
+    }
+    
+    checkAuth();
+  }, [router]);
+  
   const [adSettings, setAdSettings] = useState({
     adName: "hello",
     adType: "text",
@@ -36,8 +60,6 @@ export default function CreateAdPage({ onClose = () => {} }: CreateAdPageProps) 
     videoUrl: "",
 
   })
-
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null)
 
   const updateSetting = (key: string, value: string) => {
     setAdSettings((prev) => ({ ...prev, [key]: value }))
@@ -377,22 +399,130 @@ export default function CreateAdPage({ onClose = () => {} }: CreateAdPageProps) 
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-2">
+          <div className="mt-8 text-center">
             <Button
-              className="w-full bg-purple-600 hover:bg-purple-700"
-              onClick={() => {
-                // simple slug
-                const slug = Math.random().toString(36).substring(2, 8)
-                localStorage.setItem(`ad_${slug}`, JSON.stringify(adSettings))
-                setGeneratedLink(`${window.location.origin}/${slug}`)
+              className="w-full mb-2"
+              disabled={loading || !user}
+              onClick={async () => {
+                try {
+                  setLoading(true);
+                  
+                  if (!user) {
+                    toast({
+                      title: "Not logged in",
+                      description: "Please log in to create a link",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  
+                  console.log("Creating link with user:", user.id);
+                  
+                  // Generate a random short code for the link
+                  const shortCode = Math.random().toString(36).substring(2, 8);
+                  console.log("Generated short code:", shortCode);
+                  
+                  // Prepare the link data
+                  const linkData = {
+                    user_id: user.id,
+                    short_code: shortCode,
+                    // Store all settings as a JSON object in ad_settings
+                    ad_settings: {
+                      ...adSettings,
+                      name: adSettings.adName,
+                      type: adSettings.adType,
+                      destination: adSettings.destinationUrl
+                    },
+                    views: 0,
+                    clicks: 0
+                  };
+                  
+                  console.log("Preparing to insert data:", JSON.stringify(linkData));
+                  
+                  // First, let's check the actual columns in the links table
+                  try {
+                    console.log("Checking links table structure...");
+                    const { data: tableInfo, error: tableError } = await supabase
+                      .from('links')
+                      .select('*')
+                      .limit(1);
+                    
+                    if (tableError) {
+                      console.error("Error accessing links table:", tableError);
+                      throw new Error(`Table access error: ${tableError.message}`);
+                    }
+                    
+                    console.log("Links table structure:", tableInfo);
+                  } catch (tableCheckError) {
+                    console.error("Error checking table:", tableCheckError);
+                  }
+                  
+                  // Save to Supabase with all required columns
+                  console.log("Attempting to insert with all required columns...");
+                  const { data, error } = await supabase
+                    .from('links')
+                    .insert({
+                      user_id: user.id,
+                      short_code: shortCode,
+                      original_url: adSettings.destinationUrl, // Required field in the database
+                      content: JSON.stringify(adSettings) // Store all settings as JSON string in content field
+                    });
+                    
+                  if (error) {
+                    console.error("Supabase error details:", JSON.stringify(error));
+                    throw error;
+                  }
+                  
+                  console.log("Link created successfully:", data);
+                  
+                  // Show the generated link
+                  const linkUrl = `${window.location.origin}/l/${shortCode}`;
+                  setGeneratedLink(linkUrl);
+                  
+                  toast({
+                    title: "Link created successfully",
+                    description: "Your popup link is ready to share",
+                    variant: "default"
+                  });
+                  
+                } catch (err: any) {
+                  const errorDetails = err.details ? `: ${err.details}` : '';
+                  const errorCode = err.code ? ` (Code: ${err.code})` : '';
+                  const errorMessage = err.message || "Unknown error";
+                  
+                  console.error("Error creating link:", {
+                    message: errorMessage,
+                    code: err.code,
+                    details: err.details,
+                    error: err
+                  });
+                  
+                  toast({
+                    title: "Error creating link",
+                    description: `${errorMessage}${errorDetails}${errorCode}`,
+                    variant: "destructive"
+                  });
+                } finally {
+                  setLoading(false);
+                }
               }}
             >
-              Generate Link
+              {loading ? "Creating..." : "Generate Link"}
             </Button>
             {generatedLink && (
               <div className="text-sm break-all text-center">
-                Your link: <a className="underline text-blue-600" href={generatedLink}>{generatedLink}</a>
+                Your link: <a className="underline text-blue-600" href={generatedLink} target="_blank" rel="noopener noreferrer">{generatedLink}</a>
               </div>
+            )}
+  
+            {generatedLink && (
+              <Button 
+                variant="outline" 
+                className="w-full mt-4"
+                onClick={() => router.push('/dashboard')}
+              >
+                Go to Dashboard
+              </Button>
             )}
           </div>
         </div>
